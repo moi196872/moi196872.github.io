@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, intermediate-scale=1">
+  <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+  <title>Airbrake Continuity Test</title>
+
+  <meta property="og:title" content="TrainCrew Webapp: Airbrake Continuity Test" />
+  <meta property="og:description" content="Simulate performing an airbrake continuity test." />
+  <meta property="og:type" content="website" />
+
+  <link href="css/bootstrap.min.css" rel="stylesheet">
+  <link href="css/site.css" rel="stylesheet">
+
+
+  <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+  <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+  <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+</head>
+
+<body>
+  <!-- Fixed navbar -->
+  <nav class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false"
+          aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+        <a class="navbar-brand" href="/index.html">TrainCrew</a>
+      </div>
+      <div id="navbar" class="navbar-collapse collapse">
+        <ul class="nav navbar-nav">
+          <li><a href="switching.html">Switching</a></li>
+          <li><a href="handbrakes.html">Handbrakes</a></li>
+          <li class="active"><a href="airbrakes.html">Airbrakes</a></li>
+          <li><a href="locomotive.html">Locomotives</a></li>
+        </ul>
+        <ul class="nav navbar-nav navbar-right">
+          <li><a href="about.html">About</a></li>
+        </ul>
+
+      </div>
+      <!--/.nav-collapse -->
+    </div>
+  </nav>
+
+  <div class="container body-container">
+
+    <!-- Main component for a primary marketing message or call to action -->
+    <h1>Airbrake Continuity Test</h1>
+    <div class="well">
+      <p>To be performed if the trainline has been uncoupled and recoupled but no other changes have been made. Such as breaking a train over a crossing or changing out motive power.</p>
+    </div>
+
+    <ul class="list-group">
+      <li class="list-group-item step step-1">
+        <p>Confirm pressure at the end of the trainline.</p>
+        <button type="button" class="btn btn-lg btn-default airbrake-continuity-test-confirm">Confirm Pressure</button>
+        <div class="alert airbrake-continuity-test-confirm-badge"></div>
+      </li>
+      <li class="list-group-item step step-1-fail">
+        <p>Cannot hold air. Walk the train and inspect for defective car.</p>
+        
+        <div class="train-length-form">
+        <label for="car-count">Train Length</label>
+        <div class="input-group input-group-lg col-xs-7">
+          <input name="car-count" type="number" id="car-count" class="form-control car-count"
+            placeholder="number" aria-describedby="number-of-cars">
+          <span class="input-group-addon" id="number-of-cars">cars</span>
+        </div>
+        <button type="button" class="btn btn-lg btn-default airbrake-continuity-test-set-inspect step-1-fail-button">Inspect</button>
+      </div>
+        <div class="progress airbrake-continuity-test-set-inspect-progress step-1-fail-progress hidden">
+          <div class="progress-bar airbrake-continuity-test-set-inspect-progress-bar step-1-fail-progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0"
+            aria-valuemax="100" style="min-width: 5em;">
+            0 Cars
+          </div>
+        </div>
+         
+      </li>
+      <li class="list-group-item step step-1-resolve">
+        <p>Set car out and begin test again.</p>
+        <button type="button" class="btn btn-lg btn-default airbrake-continuity-test-set-resolve step-1-resolve-button restart-button">Restart Test</button>
+      </li>
+      <li class="list-group-item step step-2">
+        <div class="alert airbrake-continuity-test-success-badge"></div>
+      </li>
+    </ul>
+<hr />
+    <ul class="nav nav-pills">
+      <li class="nav-item">
+        <a class="nav-link" href="airbrakes.html">Back to Airbrakes</a>
+      </li>
+      <li class="nav-item">        
+        <a class="nav-link" href="/index.html">Home</a>
+      </li>
+
+
+  </div>
+  <!-- /container -->
+
+  <script src="js/jquery.min.js"></script>
+  <script src="js/bootstrap.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/site.js"></script>
+
+  <script>
+
+$(document).ready(function () {
+    $(".step").hide();
+    $(".step-1").show();
+    $(".airbrake-continuity-test-confirm-badge").hide();
+    
+
+    disable($(".airbrake-continuity-test-charge"));
+
+    var maxBrakePipePressure = 90; // Potential air pressure range
+    var brakePipePressure = maxBrakePipePressure;
+
+    $(".restart-button").click(function () {
+      window.location.reload();
+    });
+
+    
+
+    $(".airbrake-continuity-test-confirm").click(function () {
+
+        $(".airbrake-continuity-test-confirm").hide();
+
+        // Determine the likelihood of a failure
+        var failureChance = generateRandomNumber(0, MAX_AIRBRAKE_FAILURE_RATE); // decimal (.0 - 1.0) chance pressure will be too low
+        // failureChance = .1; // Train will not hold air, this is not a likely condition
+        // failureChance = 0; // Never fail, for testing
+        // failureChance = 1; // Always fail, for testing
+        console.log("-------------------")
+        console.log("Step 1: Confirm the pressure at the end of the train line")
+
+
+        // Create the failure
+        pressureModifier = 0;
+        if(decideFailure(failureChance)){
+          pressureModifier = Math.round(generateRandomNumber(0, 40));
+          console.log("Step 1: Failure decided, failureChance=" + failureChance + " pressureModifier="+ pressureModifier);
+        } else{
+          console.log("Step 1: No failure decided, failureChance=" + failureChance + " pressureModifier="+ pressureModifier);
+        }
+
+        var maxBrakePipePressure = 90;
+        // Calculate pressure at end of test time (including drop that caused the failure)
+        var naturalBrakePipeDrop = Math.round(generateRandomNumber(0, 3)); 
+        brakePipePressure = maxBrakePipePressure - naturalBrakePipeDrop ;
+        var finalBrakePipePressure = brakePipePressure - pressureModifier;
+        var safeBrakePipePressure = maxBrakePipePressure-3;
+
+        console.log("Step 1: maxBrakePipePressure=" + maxBrakePipePressure);
+        console.log("Step 1: naturalBrakePipeDrop=" + naturalBrakePipeDrop);
+        console.log("Step 1: pressureModifier=" + pressureModifier);
+        console.log("Step 1: finalBrakePipePressure=" + finalBrakePipePressure);
+        console.log("Step 1: safeBrakePipePressure=" + safeBrakePipePressure);
+
+              if(finalBrakePipePressure >= safeBrakePipePressure){
+                  // Final brake pipe Pressure is OK
+                  $(".airbrake-continuity-test-confirm-badge").addClass("alert-success");
+                  $(".airbrake-continuity-test-confirm-badge").text(brakePipePressure + " PSI - Test Successful");
+                  $(".airbrake-continuity-test-confirm-badge").show();
+                  
+                  console.log("Step 1: Fail, finalBrakePipePressure="+ finalBrakePipePressure);
+          
+                  console.log("Step 1: Pass, brakePipePressure="+ finalBrakePipePressure);
+                } else {
+                  // Final brake pipe Pressure is too low
+                  
+                  $(".airbrake-continuity-test-confirm-badge").addClass("alert-danger");
+                  $(".airbrake-continuity-test-confirm-badge").text(finalBrakePipePressure + " PSI - TOO LOW");
+                  $(".airbrake-continuity-test-confirm-badge").show();;
+                  $(".step-1-fail").show();
+
+                  console.log("Step 1: Fail, finalBrakePipePressure="+ finalBrakePipePressure);
+                }
+        
+    });
+
+
+    $(".step-1-fail-button").click(function () {
+
+        console.log("Step 1 Failure State: Could Not Hold Air");
+
+        $(".airbrake-continuity-test-inspect").hide();
+        $(".step-1-fail-button").hide();
+        $(".train-length-form").hide();
+
+        var carCount = $("#car-count").val();
+        var totalCars = parseInt(carCount, 10);
+        var secondsPerCar = 30*FAST_CLOCK_FACTOR;
+        var totalSeconds = totalCars * secondsPerCar;
+
+        carsPerSecond = carCount / totalSeconds;
+        percentPerSecond = 100 / totalSeconds;
+
+        $(".airbrake-continuity-test-set-inspect-progress").show();
+        $(".airbrake-continuity-test-set-inspect-progress").removeClass("hidden");
+
+        carSuffix = "";
+
+        // Which car is leaking?
+        var defectCar = Math.round(generateRandomNumber(1, carCount));
+        console.log("Step 1 Failure State: defectCar=" + defectCar);
+
+        var carsInspected = 0;
+        var secondsElapsed = 0;
+        var progressBar = $('.step-1-fail-progress-bar');
+        var failureCauses = [
+                    'Damaged air hose',
+                    'Leaking brake pipe',
+                    'Leaking brake cylinder',
+                    'Leaking reservoir',
+                    'Unidentified air leak'
+                  ];
+        var defectCode = Math.floor(Math.random()*failureCauses.length);
+        var defectType = failureCauses[defectCode];
+        console.log("Step 1 Failure State: defectCode=" + defectCode);
+        console.log("Step 1 Failure State: defectType=" + defectType);
+
+        var countDown = new Countdown({
+            seconds: parseInt(totalSeconds),  // number of seconds to count down
+            onUpdateStatus: function (sec) {
+                secondsElapsed++;
+                
+                var percentComplete = secondsElapsed * percentPerSecond;
+                if(defectCar == Math.floor(carsInspected)){ 
+                  progressBar.css('width', '100%').attr('aria-valuenow', 100);
+                  progressBar.text(defectType + " on car " + defectCar + ". Set car out.");
+                  progressBar.addClass("progress-bar-warning");
+                  $(".step-1-resolve").show();
+                  $(".airbrake-continuity-test-set-inspect").hide();
+                } else {
+                  progressBar.css('width', percentComplete + '%').attr('aria-valuenow', percentComplete);
+                  var carsInspectedText = Math.floor(carsInspected);
+                  if (carsInspectedText == 1) {
+                    carSuffix = "";
+                  } else {
+                    carSuffix = "s";
+                  }
+                  progressBar.text(carsInspectedText + " Car" + carSuffix);
+                  carsInspected = carsInspected + .25;
+              }
+            }, // callback for each second
+            onCounterEnd: function () {
+                if(defectCar == Math.floor(carsInspected)){ 
+                  progressBar.css('width', '100%').attr('aria-valuenow', 100);
+                  progressBar.text(defectType + " on car " + defectCar + ". Set car out.");
+                  progressBar.addClass("progress-bar-warning");
+                  $(".step-1-resolve").show();
+                  // $(".airbrake-continuity-test-set-inspect").hide();
+
+                } else {
+                  progressBar.css('width', '100%').attr('aria-valuenow', 100);
+                  progressBar.text(carCount + " Car" + carSuffix);
+                  progressBar.addClass("progress-bar-success");
+                  $(".step-3").show();
+                }
+            } // final action
+        });
+        countDown.start();
+
+        console.log("Step 1 Failure State: Complete");
+    });
+
+});
+</script>
+
+</body>
+
+</html>
